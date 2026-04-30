@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>포켓몬 키우기</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif;background:#0a0a1a;min-height:100vh;display:flex;justify-content:center;padding:16px;color:#e6edf3}
+#app{width:100%;max-width:420px}
+.panel{background:linear-gradient(145deg,#1a1a2e,#16213e);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:20px;margin-bottom:10px}
+
+/* ── 스타터 ── */
+#starter-screen{text-align:center}
+.gtitle{font-size:26px;font-weight:900;color:#FFD700;text-shadow:0 0 20px rgba(255,215,0,.5);margin-bottom:4px}
+.gsub{font-size:12px;color:#666;margin-bottom:26px}
+.starter-grid{display:flex;gap:10px;justify-content:center}
+.sc{flex:1;background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1);border-radius:16px;padding:16px 8px;cursor:pointer;transition:all .2s;text-align:center}
+.sc:hover{transform:translateY(-6px);border-color:#FFD700;background:rgba(255,215,0,.1);box-shadow:0 12px 30px rgba(255,215,0,.25)}
+.sc img{width:76px;height:76px;image-rendering:pixelated;display:block;margin:0 auto}
+.sc .sname{font-weight:bold;font-size:13px;color:#fff;margin-top:6px}
+.sc .stype{font-size:10px;margin-top:4px;padding:2px 8px;border-radius:99px;display:inline-block}
+.tg{background:rgba(34,197,94,.2);color:#4ade80}
+.tf{background:rgba(239,68,68,.2);color:#f87171}
+.tw{background:rgba(59,130,246,.2);color:#60a5fa}
+
+/* ── 헤더 ── */
+#game-screen{display:none}
+.hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.pname{font-size:20px;font-weight:900;color:#FFD700}
+.hright{display:flex;gap:6px;align-items:center}
+.lvbadge{background:linear-gradient(135deg,#FFD700,#FF8C00);color:#000;font-weight:900;font-size:11px;padding:4px 12px;border-radius:99px}
+.coinbadge{background:rgba(255,215,0,.12);border:1px solid rgba(255,215,0,.3);color:#FFD700;font-size:12px;font-weight:bold;padding:4px 10px;border-radius:99px}
+.exprow{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.explbl{font-size:10px;color:#555;width:24px}
+.barbg{flex:1;height:6px;background:rgba(255,255,255,.07);border-radius:99px;overflow:hidden}
+.barfill{height:100%;border-radius:99px;transition:width .6s cubic-bezier(.34,1.56,.64,1)}
+.fexp{background:linear-gradient(90deg,#a78bfa,#7c3aed)}
+.expval{font-size:10px;color:#555;width:55px;text-align:right}
+
+/* ── 포켓몬 디스플레이 ── */
+.pstage{text-align:center;padding:8px 0;position:relative}
+.pbg{display:inline-block;padding:20px;background:radial-gradient(circle,rgba(255,215,0,.08) 0%,transparent 70%);border-radius:50%;cursor:pointer;position:relative}
+#poke-sprite{width:128px;height:128px;image-rendering:pixelated;display:block;transition:filter .3s;position:relative;z-index:1}
+#poke-sprite.hungry{filter:sepia(.6);animation:wobble 1s ease infinite}
+#poke-sprite.tired{filter:brightness(.65)}
+@keyframes wobble{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+.tap-ring{position:absolute;inset:0;border-radius:50%;border:3px solid transparent;pointer-events:none;transition:all .2s}
+.tap-ring.on{border-color:#FFD700;box-shadow:0 0 22px rgba(255,215,0,.5)}
+.combo-badge{position:absolute;top:-4px;right:-8px;background:linear-gradient(135deg,#f97316,#ef4444);color:#fff;font-weight:900;font-size:11px;padding:3px 8px;border-radius:99px;opacity:0;transform:scale(.5);transition:all .2s}
+.combo-badge.show{opacity:1;transform:scale(1)}
+.mood-text{font-size:13px;color:#aaa;margin-top:8px;min-height:20px}
+.streak-line{font-size:12px;color:#f97316;font-weight:bold;margin-top:4px;display:none}
+.tap-hint{font-size:11px;color:#555;margin-top:4px}
+.tapbar-bg{height:6px;background:rgba(255,255,255,.07);border-radius:99px;overflow:hidden;margin:6px 0;opacity:0;transition:opacity .2s}
+.tapbar-bg.on{opacity:1}
+.tapbar-fill{height:100%;background:linear-gradient(90deg,#FFD700,#FF8C00);border-radius:99px;width:0%}
+
+/* ── 스탯 ── */
+.stats{display:flex;flex-direction:column;gap:9px}
+.srow{display:flex;align-items:center;gap:8px}
+.sico{font-size:14px;width:18px}
+.slbl{font-size:11px;color:#777;width:38px}
+.sbarbg{flex:1;height:10px;background:rgba(255,255,255,.07);border-radius:99px;overflow:hidden}
+.sbarfill{height:100%;border-radius:99px;transition:width .5s ease}
+.sval{font-size:11px;color:#999;width:28px;text-align:right}
+.fhunger{background:linear-gradient(90deg,#f97316,#ef4444)}
+.fhappy{background:linear-gradient(90deg,#facc15,#f59e0b)}
+.fenergy{background:linear-gradient(90deg,#34d399,#10b981)}
+.fbond{background:linear-gradient(90deg,#f472b6,#ec4899)}
+.sbarfill.warn{animation:pwarn 1s ease infinite}
+@keyframes pwarn{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── 액션 버튼 ── */
+.agrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.abtn{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 8px;cursor:pointer;transition:all .15s;color:#fff;text-align:center}
+.abtn:hover:not(:disabled){transform:translateY(-2px)}
+.abtn:active:not(:disabled){transform:scale(.95)}
+.abtn:disabled{opacity:.3;cursor:not-allowed}
+.aico{font-size:26px;display:block;margin-bottom:4px}
+.albl{font-size:12px;font-weight:bold}
+.adsc{font-size:10px;color:#666;margin-top:2px}
+.af:hover:not(:disabled){border-color:#f97316;background:rgba(249,115,22,.1)}
+.ap:hover:not(:disabled){border-color:#facc15;background:rgba(250,204,21,.1)}
+.at:hover:not(:disabled){border-color:#6366f1;background:rgba(99,102,241,.1)}
+.as:hover:not(:disabled){border-color:#34d399;background:rgba(52,211,153,.1)}
+
+/* ── 하단 버튼 ── */
+.bgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bbtn{border:none;border-radius:14px;padding:14px;font-size:13px;font-weight:bold;cursor:pointer;transition:all .2s;color:#fff}
+.bbattle{background:linear-gradient(135deg,#7c3aed,#4f46e5);box-shadow:0 4px 15px rgba(124,58,237,.3)}
+.bbattle:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(124,58,237,.5)}
+.bshop{background:linear-gradient(135deg,#f59e0b,#d97706);box-shadow:0 4px 15px rgba(245,158,11,.3)}
+.bshop:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(245,158,11,.5)}
+
+/* ── 파티 패널 ── */
+.party-scroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.party-scroll::-webkit-scrollbar{height:3px}
+.party-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:2px}
+.party-card{flex:0 0 74px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:8px 4px;text-align:center;cursor:default}
+.party-card img{width:52px;height:52px;image-rendering:pixelated;display:block;margin:0 auto}
+.party-card .pcname{font-size:10px;color:#ccc;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.party-card .pcskills{font-size:9px;color:#666;margin-top:2px}
+.party-label{font-size:12px;color:#888;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.ball-badge{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:99px;font-size:10px;padding:2px 8px;color:#aaa}
+
+/* ── 로그 ── */
+.logbox{background:rgba(0,0,0,.3);border-radius:12px;padding:12px;min-height:52px;max-height:70px;overflow-y:auto;font-size:12px;color:#888;line-height:1.7}
+.logbox p:last-child{color:#e6edf3}
+.brow{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.bchip{font-size:10px;padding:2px 8px;border-radius:99px;border:1px solid rgba(255,255,255,.1);color:#555}
+.bchip.on{border-color:#FFD700;color:#FFD700;background:rgba(255,215,0,.08)}
+
+/* ── 모달 공통 ── */
+.moverlay{position:fixed;inset:0;background:rgba(0,0,0,.82);display:none;justify-content:center;align-items:center;z-index:100;backdrop-filter:blur(6px)}
+.moverlay.open{display:flex}
+.mbox{background:linear-gradient(145deg,#1a1a2e,#16213e);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:24px;width:360px;max-width:95vw}
+.mtitle{font-size:16px;font-weight:900;color:#FFD700;margin-bottom:16px;text-align:center}
+
+/* ── 배틀 ── */
+.bfield{display:flex;justify-content:space-around;align-items:flex-end;min-height:130px;margin-bottom:14px}
+.bfighter{text-align:center}
+.bfighter img{width:80px;height:80px;image-rendering:pixelated}
+.bfighter .fn{font-size:11px;color:#ccc;margin-top:4px}
+.bhpbg{height:7px;background:rgba(255,255,255,.1);border-radius:99px;overflow:hidden;width:80px;margin-top:5px}
+.bhpfill{height:100%;border-radius:99px;background:linear-gradient(90deg,#34d399,#10b981);transition:width .5s ease}
+.bhpfill.low{background:linear-gradient(90deg,#f97316,#ef4444)}
+.vsbadge{font-size:22px;font-weight:900;color:rgba(255,255,255,.25);align-self:center}
+.blog{background:rgba(0,0,0,.3);border-radius:10px;padding:10px 12px;font-size:12px;color:#ccc;min-height:44px;margin-bottom:10px;line-height:1.6;white-space:pre-line}
+
+/* 배틀 버튼 2x2 그리드 */
+.bbtns{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
+.bact{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:10px 4px;color:#fff;font-size:11px;font-weight:bold;cursor:pointer;transition:all .15s;text-align:center}
+.bact:hover:not(:disabled){background:rgba(255,255,255,.14)}
+.bact:disabled{opacity:.3;cursor:not-allowed}
+.bact-catch{border-color:rgba(255,50,50,.4);color:#ff8888}
+.bact-catch:hover:not(:disabled){background:rgba(255,50,50,.1);border-color:#ff5555}
+
+/* ── 기술 선택 패널 ── */
+.skill-panel{display:none;margin-bottom:8px}
+.skill-panel.open{display:block}
+.skill-panel-title{font-size:11px;color:#888;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+.skill-panel-title button{background:none;border:none;color:#555;font-size:12px;cursor:pointer;padding:2px 6px}
+.skill-panel-title button:hover{color:#fff}
+.skill-list{display:flex;flex-direction:column;gap:5px;max-height:160px;overflow-y:auto}
+.skill-item{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:9px;padding:7px 10px;cursor:pointer;transition:all .15s}
+.skill-item:hover:not(.used){background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.25)}
+.skill-item.used{opacity:.3;cursor:not-allowed;pointer-events:none}
+.skill-item img{width:32px;height:32px;image-rendering:pixelated;flex-shrink:0}
+.skill-info{flex:1;min-width:0}
+.skill-from{font-size:9px;color:#666}
+.skill-name{font-size:12px;font-weight:bold;color:#fff}
+.pow-badge{font-size:10px;font-weight:bold;padding:2px 7px;border-radius:99px;flex-shrink:0}
+.pow-weak{background:rgba(156,163,175,.2);color:#9ca3af}
+.pow-normal{background:rgba(96,165,250,.2);color:#60a5fa}
+.pow-strong{background:rgba(249,115,22,.2);color:#fb923c}
+.pow-max{background:rgba(234,179,8,.2);color:#FFD700}
+
+.mclose{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px;color:#777;font-size:12px;cursor:pointer;transition:all .15s}
+.mclose:hover{background:rgba(255,255,255,.12);color:#fff}
+
+/* ── 포획 성공 연출 ── */
+.catch-overlay{position:fixed;inset:0;display:none;justify-content:center;align-items:center;flex-direction:column;gap:14px;z-index:150;background:rgba(0,0,0,.85)}
+.catch-overlay.open{display:flex;animation:catchFade 3s ease forwards}
+@keyframes catchFade{0%{opacity:0}10%{opacity:1}80%{opacity:1}100%{opacity:0}}
+.catch-ball{font-size:80px;animation:catchBounce 3s ease}
+@keyframes catchBounce{0%{transform:translateY(-30px) scale(1.2)}20%{transform:translateY(0) scale(.9)}35%{transform:translateY(-10px)}50%{transform:translateY(0)}60%,100%{transform:scale(1.05)}}
+.catch-text{font-size:22px;font-weight:900;color:#FFD700;text-shadow:0 0 20px rgba(255,215,0,.6)}
+.catch-subtext{font-size:13px;color:#ccc}
+
+/* ── 상점 ── */
+.shoplist{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.sitem{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px;cursor:pointer;transition:all .15s}
+.sitem:hover{border-color:rgba(255,215,0,.4);background:rgba(255,215,0,.06)}
+.sitem.cant{opacity:.3;cursor:not-allowed;pointer-events:none}
+.sico2{font-size:28px}
+.sinfo{flex:1}
+.sn{font-size:13px;font-weight:bold}
+.sd{font-size:10px;color:#666;margin-top:2px}
+.sp{font-size:12px;font-weight:bold;color:#FFD700}
+
+/* ── 이벤트 ── */
+.ebox{text-align:center}
+.eico{font-size:60px;display:block;margin-bottom:12px}
+.etitle{font-size:16px;font-weight:900;color:#FFD700;margin-bottom:6px}
+.edesc{font-size:13px;color:#ccc;margin-bottom:18px;line-height:1.6}
+.econfirm{width:100%;background:linear-gradient(135deg,#FFD700,#FF8C00);border:none;border-radius:12px;padding:13px;color:#000;font-size:14px;font-weight:900;cursor:pointer}
+
+/* ── 진화 ── */
+#evolve-overlay{position:fixed;inset:0;display:none;justify-content:center;align-items:center;flex-direction:column;gap:20px;z-index:200}
+#evolve-overlay.open{display:flex;animation:evolveAnim 3.2s ease forwards}
+@keyframes evolveAnim{0%{background:rgba(255,255,255,0)}15%{background:rgba(255,255,255,.97)}45%{background:rgba(255,255,255,.6)}75%{background:rgba(255,255,255,.9)}100%{background:rgba(255,255,255,0)}}
+#evolve-newsprite{width:150px;height:150px;image-rendering:pixelated;animation:evoSprite 3.2s ease}
+@keyframes evoSprite{0%{opacity:0;transform:scale(0) rotate(-180deg)}20%{opacity:0}45%{opacity:1;transform:scale(1.4) rotate(10deg)}75%{transform:scale(1) rotate(-3deg)}100%{transform:scale(1.1) rotate(0)}}
+#evolve-label{font-size:26px;font-weight:900;color:#7c3aed;text-shadow:0 0 20px rgba(124,58,237,.5);animation:evoLabel 3.2s ease}
+@keyframes evoLabel{0%,28%{opacity:0;transform:translateY(20px)}45%{opacity:1;transform:translateY(0)}90%{opacity:1}100%{opacity:0}}
+
+/* ── 플로팅 / 토스트 ── */
+.floatnum{position:fixed;font-size:15px;font-weight:900;pointer-events:none;z-index:500;animation:floatup 1.2s ease forwards}
+@keyframes floatup{0%{opacity:1;transform:translateY(0) scale(1)}80%{opacity:1;transform:translateY(-45px) scale(1.2)}100%{opacity:0;transform:translateY(-65px) scale(.8)}}
+#toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-70px);background:rgba(20,20,40,.95);border:1px solid rgba(255,215,0,.3);border-radius:12px;padding:10px 20px;font-size:13px;font-weight:bold;color:#FFD700;z-index:400;transition:transform .3s cubic-bezier(.34,1.56,.64,1);white-space:nowrap}
+#toast.show{transform:translateX(-50%) translateY(0)}
+
+/* ── 애니메이션 ── */
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+.shake{animation:shake .4s ease}
+@keyframes winflash{0%,100%{filter:brightness(1)}50%{filter:brightness(2) saturate(2)}}
+.winflash{animation:winflash .3s ease 3}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:2px}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- 스타터 선택 -->
+<div id="starter-screen" class="panel">
+  <div class="gtitle">⚡ 포켓몬 키우기</div>
+  <div class="gsub">파트너를 선택하세요!</div>
+  <div class="starter-grid">
+    <div class="sc" onclick="choosePokemon('bulbasaur')">
+      <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/1.gif" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png'">
+      <div class="sname">이상해씨</div><span class="stype tg">풀 / 독</span>
+    </div>
+    <div class="sc" onclick="choosePokemon('charmander')">
+      <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/4.gif" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png'">
+      <div class="sname">파이리</div><span class="stype tf">불꽃</span>
+    </div>
+    <div class="sc" onclick="choosePokemon('squirtle')">
+      <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/7.gif" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png'">
+      <div class="sname">꼬부기</div><span class="stype tw">물</span>
+    </div>
+  </div>
+</div>
+
+<!-- 메인 게임 -->
+<div id="game-screen">
+
+  <!-- 포켓몬 카드 -->
+  <div class="panel">
+    <div class="hdr">
+      <span class="pname" id="poke-name-display"></span>
+      <div class="hright">
+        <span class="coinbadge" id="coin-val">💰 20</span>
+        <span class="lvbadge">Lv.<span id="lv-num">1</span></span>
+      </div>
+    </div>
+    <div class="exprow">
+      <span class="explbl">EXP</span>
+      <div class="barbg"><div class="barfill fexp" id="exp-bar" style="width:0%"></div></div>
+      <span class="expval" id="exp-val">0/100</span>
+    </div>
+    <div class="pstage">
+      <div class="pbg" onclick="onSpriteClick()">
+        <img id="poke-sprite" src="" alt="pokemon" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png'">
+        <div class="tap-ring" id="tap-ring"></div>
+        <div class="combo-badge" id="combo-badge">2콤보!</div>
+      </div>
+      <div class="mood-text" id="mood-text"></div>
+      <div class="streak-line" id="streak-line"></div>
+      <div class="tapbar-bg" id="tapbar-bg"><div class="tapbar-fill" id="tapbar-fill"></div></div>
+      <div class="tap-hint">포켓몬을 클릭하면 탭 챌린지! 👆</div>
+    </div>
+    <div class="stats">
+      <div class="srow"><span class="sico">🍖</span><span class="slbl">배고픔</span><div class="sbarbg"><div class="sbarfill fhunger" id="fill-hunger" style="width:70%"></div></div><span class="sval" id="val-hunger">70</span></div>
+      <div class="srow"><span class="sico">😄</span><span class="slbl">행복</span><div class="sbarbg"><div class="sbarfill fhappy" id="fill-happy" style="width:60%"></div></div><span class="sval" id="val-happy">60</span></div>
+      <div class="srow"><span class="sico">⚡</span><span class="slbl">체력</span><div class="sbarbg"><div class="sbarfill fenergy" id="fill-energy" style="width:80%"></div></div><span class="sval" id="val-energy">80</span></div>
+      <div class="srow"><span class="sico">💖</span><span class="slbl">친밀도</span><div class="sbarbg"><div class="sbarfill fbond" id="fill-bond" style="width:30%"></div></div><span class="sval" id="val-bond">30</span></div>
+    </div>
+  </div>
+
+  <!-- 행동 -->
+  <div class="panel">
+    <div class="agrid">
+      <button class="abtn af" onclick="doAction('feed')"><span class="aico">🍖</span><span class="albl">밥 주기</span><span class="adsc">배고픔 회복</span></button>
+      <button class="abtn ap" onclick="doAction('play')"><span class="aico">🎾</span><span class="albl">같이 놀기</span><span class="adsc">행복 +25</span></button>
+      <button class="abtn at" onclick="doAction('train')"><span class="aico">💪</span><span class="albl">훈련하기</span><span class="adsc">EXP 대량 획득</span></button>
+      <button class="abtn as" onclick="doAction('sleep')"><span class="aico">💤</span><span class="albl">재우기</span><span class="adsc">체력 회복</span></button>
+    </div>
+  </div>
+
+  <!-- 배틀 + 상점 -->
+  <div class="panel" style="padding:14px">
+    <div class="bgrid">
+      <button class="bbtn bbattle" onclick="openBattle()">⚔️ 야생 배틀!</button>
+      <button class="bbtn bshop" onclick="openShop()">🛒 상점</button>
+    </div>
+  </div>
+
+  <!-- 파티 패널 -->
+  <div class="panel" id="party-panel" style="display:none;padding:14px">
+    <div class="party-label">
+      🎒 내 포켓몬 파티
+      <span class="ball-badge" id="ball-display">⚾ 몬스터볼 0개</span>
+    </div>
+    <div class="party-scroll" id="party-grid"></div>
+  </div>
+
+  <!-- 로그 + 배지 -->
+  <div class="panel" style="padding:14px">
+    <div class="logbox" id="log-box"><p>포켓몬 키우기 시작! 😄</p></div>
+    <div class="brow" id="badges-row"></div>
+  </div>
+
+</div><!-- /game-screen -->
+</div><!-- /app -->
+
+<!-- 배틀 모달 -->
+<div class="moverlay" id="battle-modal">
+  <div class="mbox">
+    <div class="mtitle">⚔️ 야생 포켓몬 출현!</div>
+    <div class="bfield">
+      <div class="bfighter">
+        <img id="b-my-img" src="" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png'">
+        <div class="fn" id="b-my-name"></div>
+        <div class="bhpbg"><div class="bhpfill" id="b-my-hp" style="width:100%"></div></div>
+      </div>
+      <div class="vsbadge">VS</div>
+      <div class="bfighter">
+        <img id="b-enemy-img" src="" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/16.png'">
+        <div class="fn" id="b-enemy-name"></div>
+        <div class="bhpbg"><div class="bhpfill" id="b-enemy-hp" style="width:100%"></div></div>
+      </div>
+    </div>
+    <div class="blog" id="b-log">야생 포켓몬이 나타났다!</div>
+
+    <!-- 기술 선택 패널 -->
+    <div class="skill-panel" id="skill-panel">
+      <div class="skill-panel-title">
+        ✨ 기술 선택 <button onclick="closeSkillPanel()">✕ 닫기</button>
+      </div>
+      <div class="skill-list" id="skill-list"></div>
+    </div>
+
+    <!-- 배틀 버튼 2x2 -->
+    <div class="bbtns" id="b-actions">
+      <button class="bact" id="b-atk" onclick="battleAct('atk')">⚔️ 공격</button>
+      <button class="bact" id="b-skill-btn" onclick="openSkillPanel()">✨ 기술 선택</button>
+      <button class="bact bact-catch" id="b-catch" onclick="catchPokemon()">⚾ 잡기 (<span id="b-ball-count">0</span>)</button>
+      <button class="bact" id="b-run" onclick="battleAct('run')">🏃 도망</button>
+    </div>
+    <button class="mclose" id="b-close" style="display:none" onclick="closeBattle()">확인</button>
+  </div>
+</div>
+
+<!-- 포획 성공 연출 -->
+<div class="catch-overlay" id="catch-overlay">
+  <div class="catch-ball">⚾</div>
+  <div class="catch-text" id="catch-text">포획 성공!</div>
+  <div class="catch-subtext" id="catch-subtext"></div>
+</div>
+
+<!-- 상점 모달 -->
+<div class="moverlay" id="shop-modal">
+  <div class="mbox">
+    <div class="mtitle">🛒 포켓몬 상점</div>
+    <div class="shoplist" id="shop-items"></div>
+    <button class="mclose" onclick="closeShop()">닫기</button>
+  </div>
+</div>
+
+<!-- 이벤트 모달 -->
+<div class="moverlay" id="event-modal">
+  <div class="mbox">
+    <div class="ebox">
+      <span class="eico" id="e-icon">🎁</span>
+      <div class="etitle" id="e-title"></div>
+      <div class="edesc" id="e-desc"></div>
+      <button class="econfirm" id="e-confirm">받기!</button>
+    </div>
+  </div>
+</div>
+
+<!-- 진화 오버레이 -->
+<div id="evolve-overlay">
+  <img id="evolve-newsprite" src="" alt="">
+  <div id="evolve-label"></div>
+</div>
+
+<!-- 토스트 -->
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  DATA
+// ═══════════════════════════════════════════════════
+const POKEDEX = {
+  bulbasaur:{
+    stages:[{id:1,name:'이상해씨',evolveLv:16},{id:2,name:'이상해풀',evolveLv:32},{id:3,name:'이상해꽃',evolveLv:null}],
+    skills:[{name:'줄기채찍',pow:1.2},{name:'잎날가르기',pow:1.5},{name:'태양광선',pow:2.0}]
+  },
+  charmander:{
+    stages:[{id:4,name:'파이리',evolveLv:16},{id:5,name:'리자드',evolveLv:36},{id:6,name:'리자몽',evolveLv:null}],
+    skills:[{name:'화염방사',pow:1.5},{name:'불꽃소용돌이',pow:1.7},{name:'오버히트',pow:2.2}]
+  },
+  squirtle:{
+    stages:[{id:7,name:'꼬부기',evolveLv:16},{id:8,name:'어니부기',evolveLv:36},{id:9,name:'거북왕',evolveLv:null}],
+    skills:[{name:'물대포',pow:1.4},{name:'거품',pow:1.0},{name:'파도타기',pow:1.8}]
+  }
+};
+
+// 야생 포켓몬 - 각자 고유 기술 보유
+const WILD = [
+  {id:16, name:'구구',    hp:35,  atk:8,  skills:[{name:'돌풍',pow:1.1},{name:'모래뿌리기',pow:0.8}]},
+  {id:19, name:'꼬렛',   hp:30,  atk:7,  skills:[{name:'몸통박기',pow:1.0},{name:'할퀴기',pow:0.9}]},
+  {id:10, name:'캐터피', hp:25,  atk:5,  skills:[{name:'실뽑기',pow:0.7},{name:'몸통박기',pow:1.0}]},
+  {id:41, name:'주뱃',   hp:40,  atk:10, skills:[{name:'초음파',pow:0.8},{name:'흡혈',pow:1.2}]},
+  {id:63, name:'캐이시', hp:45,  atk:12, skills:[{name:'순간이동',pow:0.6},{name:'사이코키네시스',pow:1.8}]},
+  {id:18, name:'피죤투', hp:55,  atk:14, skills:[{name:'돌풍',pow:1.1},{name:'하이퍼빔',pow:2.2}]},
+  {id:80, name:'야도란', hp:65,  atk:12, skills:[{name:'물대포',pow:1.4},{name:'사이코키네시스',pow:1.8}]},
+  {id:59, name:'가디',   hp:60,  atk:16, skills:[{name:'화염방사',pow:1.5},{name:'극속',pow:1.6}]},
+  {id:143,name:'잠만보', hp:90,  atk:18, skills:[{name:'몸통박기',pow:1.0},{name:'잠자기',pow:0.5},{name:'지진',pow:1.9}]},
+  {id:26, name:'라이츄', hp:75,  atk:20, skills:[{name:'10만볼트',pow:1.6},{name:'번개',pow:2.0}]},
+  {id:130,name:'갸라도스',hp:120,atk:28, skills:[{name:'파도타기',pow:1.4},{name:'하이퍼빔',pow:2.2},{name:'용의분노',pow:2.5}]},
+  {id:151,name:'뮤',     hp:160,atk:38, skills:[{name:'사이코키네시스',pow:1.8},{name:'변환',pow:1.0},{name:'10만볼트',pow:1.6}]}
+];
+
+const SHOP_ITEMS = [
+  {id:'ball',  ico:'⚾', name:'몬스터볼 ×3',  desc:'야생 포켓몬을 잡을 수 있어!',  cost:60,  fn:s=>{s.balls+=3}},
+  {id:'berry', ico:'🍓', name:'슈퍼볼 열매',  desc:'배고픔 +60, 행복 +5',           cost:30,  fn:s=>{s.hunger=Math.min(100,s.hunger+60);s.happy=Math.min(100,s.happy+5)}},
+  {id:'candy', ico:'🍬', name:'행복 사탕',     desc:'행복 +50',                       cost:40,  fn:s=>{s.happy=Math.min(100,s.happy+50)}},
+  {id:'pot',   ico:'💊', name:'활력제',         desc:'체력 +70',                       cost:50,  fn:s=>{s.energy=Math.min(100,s.energy+70)}},
+  {id:'rare',  ico:'🍭', name:'레어캔디',       desc:'즉시 레벨업!',                   cost:100, fn:_=>levelUp()},
+  {id:'bond',  ico:'💝', name:'우정의 열매',    desc:'친밀도 +40',                     cost:60,  fn:s=>{s.bond=Math.min(100,s.bond+40)}}
+];
+
+const EVENTS = [
+  {ico:'🍎',title:'야생 열매 발견!',     desc:'맛있는 열매를 찾았어!',         fn:s=>{s.hunger=Math.min(100,s.hunger+20);return'배고픔 +20'}},
+  {ico:'⭐',title:'별똥별이 떨어졌어!', desc:'소원을 빌었더니 파워업!',        fn:_=>{gainExp(35);return'EXP +35'}},
+  {ico:'💰',title:'보물 발견!',           desc:'반짝이는 코인을 잔뜩 주웠어!',  fn:s=>{s.coins+=50;s.totalCoins+=50;return'코인 +50'}},
+  {ico:'🌈',title:'무지개가 떴어!',      desc:'포켓몬이 기분 최고!',            fn:s=>{s.happy=Math.min(100,s.happy+25);s.bond=Math.min(100,s.bond+10);return'행복 +25, 친밀도 +10'}},
+  {ico:'🏋️',title:'신비한 수련터!',    desc:'특훈으로 강해졌어!',              fn:_=>{gainExp(45);return'EXP +45'}},
+  {ico:'😈',title:'나쁜 포켓몬 등장!',  desc:'도망치느라 지쳐버렸어...',       fn:s=>{s.energy=Math.max(0,s.energy-15);return'체력 -15'}},
+  {ico:'🎁',title:'택배 도착!',          desc:'누군가가 선물을 보냈어!',         fn:s=>{s.coins+=30;s.totalCoins+=30;s.hunger=Math.min(100,s.hunger+20);return'코인 +30, 배고픔 +20'}},
+  {ico:'⚾',title:'몬스터볼 발견!',      desc:'풀숲에서 몬스터볼을 찾았어!',    fn:s=>{s.balls+=2;return'몬스터볼 +2'}}
+];
+
+const BADGES_DEF = [
+  {id:'lv5',    ico:'⭐',label:'Lv.5',      cond:s=>s.level>=5},
+  {id:'lv20',   ico:'🌟',label:'Lv.20',     cond:s=>s.level>=20},
+  {id:'evo1',   ico:'🦋',label:'첫 진화',   cond:s=>s.stage>=1},
+  {id:'evo2',   ico:'👑',label:'최종 진화',  cond:s=>s.stage>=2},
+  {id:'bond100',ico:'💝',label:'베프',       cond:s=>s.bond>=100},
+  {id:'win10',  ico:'🏆',label:'10승',       cond:s=>s.wins>=10},
+  {id:'catch1', ico:'⚾',label:'첫 포획',    cond:s=>s.party.length>=1},
+  {id:'catch5', ico:'🎒',label:'파티 완성',  cond:s=>s.party.length>=5}
+];
+
+// ═══════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════
+let G = null;
+let earnedBadges = new Set();
+let battleState  = null;
+let battleSkills = []; // 현재 전투에서 사용 가능한 기술 목록
+let decayIv = null, eventIv = null;
+
+// Tap
+let tapActive=false, tapCount=0, tapTimer=null;
+const TAP_DURATION=3000, TAP_TARGET=15;
+
+// Combo
+let lastAction=null, comboCount=0, comboTimer=null;
+
+// ═══════════════════════════════════════════════════
+//  AUDIO
+// ═══════════════════════════════════════════════════
+let actx=null;
+function ac(){if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();return actx}
+function sfx(type){
+  try{
+    const ctx=ac(),now=ctx.currentTime;
+    const beep=(f,t,d,wave='sine',vol=0.12)=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.type=wave;o.frequency.value=f;
+      g.gain.setValueAtTime(vol,now+t);g.gain.exponentialRampToValueAtTime(0.001,now+t+d);
+      o.connect(g);g.connect(ctx.destination);o.start(now+t);o.stop(now+t+d+0.01);
+    };
+    if(type==='tap'){beep(880,0,.08,'sine',.08)}
+    else if(type==='action'){beep(440,0,.08);beep(660,.08,.15)}
+    else if(type==='levelup'){[523,659,784,1047].forEach((f,i)=>beep(f,i*.1,.25))}
+    else if(type==='hit'){beep(200,0,.18,'sawtooth',.14);beep(80,.1,.15,'sawtooth',.1)}
+    else if(type==='evolve'){for(let i=0;i<8;i++)beep(200+i*160,i*.18,.3)}
+    else if(type==='coin'){beep(1200,0,.1,'triangle',.09);beep(1600,.08,.12,'triangle',.07)}
+    else if(type==='catch'){[300,400,300,500].forEach((f,i)=>beep(f,i*.2,.25))}
+  }catch(e){}
+}
+
+// ═══════════════════════════════════════════════════
+//  SPRITES
+// ═══════════════════════════════════════════════════
+function gifUrl(id){return`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/${id}.gif`}
+function pngUrl(id){return`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`}
+function setImg(el,id){el.src=gifUrl(id);el.onerror=()=>el.src=pngUrl(id)}
+
+// ═══════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════
+function choosePokemon(key){
+  G={pokeKey:key,stage:0,level:1,exp:0,expNeeded:100,
+     hunger:70,happy:60,energy:80,bond:30,
+     coins:20,totalCoins:20,wins:0,losses:0,streak:0,
+     balls:0,party:[],cd:false};
+  document.getElementById('starter-screen').style.display='none';
+  document.getElementById('game-screen').style.display='block';
+  addLog(`${POKEDEX[key].stages[0].name}을(를) 선택했어! 🎉`);
+  addLog('💡 상점에서 몬스터볼을 사면 야생 포켓몬을 잡을 수 있어!');
+  updateUI();
+  decayIv=setInterval(decayStats,9000);
+  eventIv=setInterval(triggerEvent,65000);
+}
+
+// ═══════════════════════════════════════════════════
+//  DECAY
+// ═══════════════════════════════════════════════════
+function decayStats(){
+  if(!G)return;
+  G.hunger=Math.max(0,G.hunger-4);G.happy=Math.max(0,G.happy-2);G.energy=Math.max(0,G.energy-1);
+  if(G.hunger===0){addLog('😰 배가 너무 고파!');G.happy=Math.max(0,G.happy-5)}
+  if(G.energy<10)addLog('😪 지쳐서 쓰러질 것 같아...');
+  updateUI();
+}
+
+// ═══════════════════════════════════════════════════
+//  ACTIONS
+// ═══════════════════════════════════════════════════
+function doAction(type){
+  if(G.cd){showToast('잠깐 기다려! ⏳');return}
+  if(lastAction===type)comboCount++;else comboCount=1;
+  lastAction=type;clearTimeout(comboTimer);
+  comboTimer=setTimeout(()=>{comboCount=0;lastAction=null;updateCombo()},5000);
+  let expGain=0,msg='';
+  switch(type){
+    case'feed':
+      if(G.hunger>=95){showToast('배가 불러! 🤤');return}
+      const f=Math.floor((20+Math.random()*15)*(comboCount>2?.7:1));
+      G.hunger=Math.min(100,G.hunger+f);G.happy=Math.min(100,G.happy+5);G.bond=Math.min(100,G.bond+1);
+      expGain=5;msg=`밥을 줬어! +${f} 배고픔 🍖`;floatNum(`+${f}`,'#f97316');break;
+    case'play':
+      if(G.energy<15){showToast('너무 피곤해! 재워줘 💤');return}
+      const h=Math.floor(15+Math.random()*15);
+      G.happy=Math.min(100,G.happy+h);G.energy=Math.max(0,G.energy-15);
+      G.hunger=Math.max(0,G.hunger-10);G.bond=Math.min(100,G.bond+4);
+      expGain=12;msg=`신나게 놀았어! 행복+${h} 🎾`;floatNum(`+${h}행복`,'#facc15');break;
+    case'train':
+      if(G.energy<25){showToast('체력 부족! 재워줘 💤');return}
+      if(G.hunger<15){showToast('배고파! 먹여줘 🍖');return}
+      const e=Math.floor((20+Math.random()*12)*(comboCount>=2?1.35:1));
+      expGain=e;G.energy=Math.max(0,G.energy-22);G.hunger=Math.max(0,G.hunger-12);G.bond=Math.min(100,G.bond+3);
+      msg=`열심히 훈련! EXP+${e} 💪`;floatNum(`+${e}EXP`,'#a78bfa');break;
+    case'sleep':
+      if(G.energy>=95){showToast('안 졸려! 😊');return}
+      const s2=Math.floor(30+Math.random()*20);
+      G.energy=Math.min(100,G.energy+s2);G.happy=Math.min(100,G.happy+5);
+      expGain=3;msg=`푹 잤어! 체력+${s2} 😴`;floatNum(`+${s2}체력`,'#34d399');break;
+  }
+  sfx('action');gainExp(expGain);setCd(1200);updateCombo();updateUI();
+  if(msg)addLog(POKEDEX[G.pokeKey].stages[G.stage].name+': '+msg);
+  checkBadges();
+}
+
+// ═══════════════════════════════════════════════════
+//  TAP CHALLENGE
+// ═══════════════════════════════════════════════════
+function onSpriteClick(){
+  if(tapActive){
+    tapCount++;sfx('tap');
+    document.getElementById('tapbar-fill').style.width=Math.min(100,tapCount/TAP_TARGET*100)+'%';
+    const img=document.getElementById('poke-sprite');
+    img.style.transform=`scale(${.88+Math.random()*.2})`;
+    setTimeout(()=>img.style.transform='',90);
+    return;
+  }
+  if(G.cd)return;
+  tapActive=true;tapCount=0;
+  document.getElementById('tapbar-bg').classList.add('on');
+  document.getElementById('tapbar-fill').style.width='0%';
+  document.getElementById('tap-ring').classList.add('on');
+  document.querySelector('.tap-hint').textContent='빠르게 탭! 👆';
+  tapTimer=setTimeout(finishTap,TAP_DURATION);
+}
+function finishTap(){
+  tapActive=false;
+  document.getElementById('tapbar-bg').classList.remove('on');
+  document.getElementById('tap-ring').classList.remove('on');
+  document.querySelector('.tap-hint').textContent='포켓몬을 클릭하면 탭 챌린지! 👆';
+  const ratio=tapCount/TAP_TARGET;
+  let exp=0,coins=0;
+  if(ratio>=1){exp=40;coins=18;addLog(`🔥 퍼펙트! ${tapCount}번 탭! EXP+${exp} 코인+${coins}!`);showToast('🔥 퍼펙트!');sfx('levelup')}
+  else if(ratio>=.7){exp=22;coins=8;addLog(`✨ 굿! ${tapCount}번 탭! EXP+${exp}!`);showToast(`✨ ${tapCount}번 탭!`);sfx('action')}
+  else if(ratio>=.4){exp=10;addLog(`👌 ${tapCount}번 탭! EXP+${exp}`)}
+  else{addLog(`😅 ${tapCount}번 탭... 더 빠르게!`)}
+  G.bond=Math.min(100,G.bond+Math.floor(tapCount/3));
+  G.happy=Math.min(100,G.happy+Math.floor(tapCount/2));
+  G.coins+=coins;G.totalCoins+=coins;
+  gainExp(exp);setCd(1500);checkBadges();updateUI();tapCount=0;
+}
+
+// ═══════════════════════════════════════════════════
+//  EXP / LEVEL / EVOLVE
+// ═══════════════════════════════════════════════════
+function gainExp(n){
+  if(n<=0)return;
+  G.exp+=n;
+  while(G.exp>=G.expNeeded){G.exp-=G.expNeeded;levelUp()}
+  updateUI();
+}
+function levelUp(){
+  G.level++;G.expNeeded=Math.floor(100*Math.pow(1.2,G.level-1));
+  const bonus=G.level*3;G.coins+=bonus;G.totalCoins+=bonus;
+  sfx('levelup');showToast(`✨ Lv.${G.level} 레벨업!`);
+  addLog(`🎉 Lv.${G.level} 레벨업! 코인+${bonus}!`);floatNum('LEVEL UP!','#FFD700');
+  const pd=POKEDEX[G.pokeKey],st=pd.stages[G.stage];
+  if(st.evolveLv&&G.level>=st.evolveLv&&G.stage<pd.stages.length-1)setTimeout(evolve,700);
+  checkBadges();
+}
+function evolve(){
+  const pd=POKEDEX[G.pokeKey];G.stage++;
+  const ns=pd.stages[G.stage];sfx('evolve');
+  const ni=document.getElementById('evolve-newsprite');setImg(ni,ns.id);
+  document.getElementById('evolve-label').textContent=`${ns.name}(으)로 진화!`;
+  document.getElementById('evolve-overlay').classList.add('open');
+  setTimeout(()=>{document.getElementById('evolve-overlay').classList.remove('open');updateUI()},3300);
+  addLog(`🌟 ${ns.name}(으)로 진화했어!!`);showToast(`🌟 ${ns.name} 진화!`);checkBadges();
+}
+
+// ═══════════════════════════════════════════════════
+//  COMBO
+// ═══════════════════════════════════════════════════
+function updateCombo(){
+  const b=document.getElementById('combo-badge');
+  if(comboCount>=2){b.textContent=`${comboCount}콤보!`;b.classList.add('show')}
+  else b.classList.remove('show');
+}
+
+// ═══════════════════════════════════════════════════
+//  BATTLE - 초기화
+// ═══════════════════════════════════════════════════
+function openBattle(){
+  if(G.energy<20){showToast('체력 부족! 재워줘 💤');return}
+  if(G.hunger<10){showToast('배고파! 먹여줘 🍖');return}
+  const pd=POKEDEX[G.pokeKey],ms=pd.stages[G.stage];
+  const maxI=Math.min(Math.floor(G.level/3)+2,WILD.length-1);
+  const enemy=WILD[Math.floor(Math.random()*(maxI+1))];
+  const myMaxHp=30+G.level*6+Math.floor(G.bond/5);
+  const myAtk=6+G.level*2+Math.floor(G.bond/8);
+
+  battleState={
+    myHp:myMaxHp,myMaxHp,myAtk,
+    enemyHp:enemy.hp,enemyMaxHp:enemy.hp,enemyAtk:enemy.atk,
+    enemy,myId:ms.id,myName:ms.name,over:false
+  };
+
+  // 이번 전투에서 사용 가능한 기술 목록 구성
+  battleSkills=[];
+  // 내 스타터 기술
+  pd.skills.forEach(sk=>{
+    battleSkills.push({name:sk.name,pow:sk.pow,fromId:ms.id,fromName:ms.name,used:false});
+  });
+  // 파티 포켓몬 기술
+  G.party.forEach(p=>{
+    p.skills.forEach(sk=>{
+      battleSkills.push({name:sk.name,pow:sk.pow,fromId:p.id,fromName:p.name,used:false});
+    });
+  });
+
+  setImg(document.getElementById('b-my-img'),ms.id);
+  document.getElementById('b-my-name').textContent=ms.name;
+  setImg(document.getElementById('b-enemy-img'),enemy.id);
+  document.getElementById('b-enemy-name').textContent=enemy.name;
+  ['b-my-hp','b-enemy-hp'].forEach(id=>{
+    document.getElementById(id).style.width='100%';
+    document.getElementById(id).classList.remove('low');
+  });
+  setBlog(`야생 ${enemy.name}이(가) 나타났다!\n몬스터볼: ${G.balls}개`);
+  document.getElementById('b-ball-count').textContent=G.balls;
+  ['b-atk','b-skill-btn','b-catch','b-run'].forEach(id=>document.getElementById(id).disabled=false);
+  if(G.balls===0)document.getElementById('b-catch').disabled=true;
+  document.getElementById('b-close').style.display='none';
+  document.getElementById('b-actions').style.display='grid';
+  document.getElementById('skill-panel').classList.remove('open');
+  document.getElementById('battle-modal').classList.add('open');
+}
+
+// ═══════════════════════════════════════════════════
+//  BATTLE - 기술 선택 패널
+// ═══════════════════════════════════════════════════
+function powLabel(pow){
+  if(pow>=2.0)return{cls:'pow-max',txt:'최강'};
+  if(pow>=1.5)return{cls:'pow-strong',txt:'강력'};
+  if(pow>=1.0)return{cls:'pow-normal',txt:'보통'};
+  return{cls:'pow-weak',txt:'약함'};
+}
+
+function openSkillPanel(){
+  if(!battleState||battleState.over)return;
+  // 기술 목록 렌더링
+  const list=document.getElementById('skill-list');
+  list.innerHTML='';
+  battleSkills.forEach((sk,i)=>{
+    const pl=powLabel(sk.pow);
+    const row=document.createElement('div');
+    row.className='skill-item'+(sk.used?' used':'');
+    row.innerHTML=`
+      <img src="${gifUrl(sk.fromId)}" onerror="this.src='${pngUrl(sk.fromId)}'">
+      <div class="skill-info">
+        <div class="skill-from">${sk.fromName}</div>
+        <div class="skill-name">${sk.name}</div>
+      </div>
+      <span class="pow-badge ${pl.cls}">${pl.txt}</span>
+    `;
+    if(!sk.used)row.onclick=()=>useSkill(i);
+    list.appendChild(row);
+  });
+  document.getElementById('skill-panel').classList.add('open');
+}
+
+function closeSkillPanel(){
+  document.getElementById('skill-panel').classList.remove('open');
+}
+
+function useSkill(index){
+  if(!battleState||battleState.over)return;
+  closeSkillPanel();
+  const bs=battleState,sk=battleSkills[index];
+  if(sk.used)return;
+  sk.used=true;
+
+  const crit=Math.random()<.12;
+  let dmg=Math.floor(bs.myAtk*sk.pow*(0.85+Math.random()*.3));
+  if(crit)dmg=Math.floor(dmg*1.5);
+  let log=`${sk.fromName}의 ${sk.name}!`;
+  if(crit)log+=' 급소!!!';
+  log+=` ${dmg} 데미지!`;
+
+  sfx('hit');
+  bs.enemyHp=Math.max(0,bs.enemyHp-dmg);
+  updateBHp();setBlog(log);
+  shake('b-enemy-img');
+
+  if(bs.enemyHp<=0){
+    document.getElementById('b-enemy-img').classList.add('winflash');
+    setBlog(log+`\n야생 ${bs.enemy.name}이(가) 쓰러졌다! 🎉`);
+    bs.over=true;setTimeout(()=>endBattle('win'),900);return;
+  }
+  lockBtns(true);
+  setTimeout(()=>{enemyAttack();if(!bs.over)lockBtns(false)},900);
+}
+
+// ═══════════════════════════════════════════════════
+//  BATTLE - 공격/도망
+// ═══════════════════════════════════════════════════
+function battleAct(type){
+  if(!battleState||battleState.over)return;
+  const bs=battleState;
+  closeSkillPanel();
+
+  if(type==='run'){
+    if(Math.random()>.35){setBlog('도망쳤다! 탈출 성공! 🏃');bs.over=true;endBattle('run')}
+    else{setBlog('도망칠 수 없다! 😱');lockBtns(true);setTimeout(()=>{enemyAttack();if(!bs.over)lockBtns(false)},700)}
+    return;
+  }
+  // 기본 공격
+  const crit=Math.random()<.12;
+  let dmg=Math.floor(bs.myAtk*(0.8+Math.random()*.4));
+  if(crit)dmg=Math.floor(dmg*1.5);
+  let log=crit?'급소다! ':'';
+  log+=`${bs.myName}의 공격! ${dmg} 데미지!`;
+
+  sfx('hit');bs.enemyHp=Math.max(0,bs.enemyHp-dmg);
+  updateBHp();setBlog(log);shake('b-enemy-img');
+
+  if(bs.enemyHp<=0){
+    document.getElementById('b-enemy-img').classList.add('winflash');
+    setBlog(log+`\n야생 ${bs.enemy.name}이(가) 쓰러졌다! 🎉`);
+    bs.over=true;setTimeout(()=>endBattle('win'),900);return;
+  }
+  lockBtns(true);
+  setTimeout(()=>{enemyAttack();if(!bs.over)lockBtns(false)},900);
+}
+
+// ═══════════════════════════════════════════════════
+//  BATTLE - 포획
+// ═══════════════════════════════════════════════════
+function catchPokemon(){
+  if(!battleState||battleState.over)return;
+  if(G.balls<=0){showToast('몬스터볼이 없어! 상점에서 구매해! ⚾');return}
+  if(G.party.length>=6){showToast('파티가 꽉 찼어! (최대 6마리)');return}
+  const bs=battleState;
+  G.balls--;
+  document.getElementById('b-ball-count').textContent=G.balls;
+  if(G.balls===0)document.getElementById('b-catch').disabled=true;
+
+  // 포획 확률: HP 낮을수록 높아짐 (5% ~ 65%)
+  const hpRatio=bs.enemyHp/bs.enemyMaxHp;
+  const rate=(1-hpRatio)*0.60+0.05;
+  const success=Math.random()<rate;
+
+  setBlog(`몬스터볼을 던졌다!\n(${Math.round(rate*100)}% 확률)`);
+  lockBtns(true);
+
+  setTimeout(()=>{
+    if(success){
+      bs.over=true;
+      // 파티에 추가
+      const caught={id:bs.enemy.id,name:bs.enemy.name,skills:bs.enemy.skills,atk:bs.enemy.atk};
+      G.party.push(caught);
+      // 포획 연출
+      showCatchSuccess(caught);
+      setBlog(`${bs.enemy.name}을(를) 잡았다!! ⚾🎉`);
+      addLog(`⚾ 야생 ${bs.enemy.name} 포획 성공!`);
+      sfx('catch');
+      setTimeout(()=>{endBattle('catch');renderParty()},2800);
+    }else{
+      setBlog(`아깝다! 몬스터볼에서 탈출했어!\n남은 볼: ${G.balls}개`);
+      // 탈출 시 적이 화가 남 → 더 강한 반격
+      bs.enemyAtk=Math.floor(bs.enemyAtk*1.2);
+      enemyAttack();
+      if(!bs.over)lockBtns(false);
+    }
+  },1200);
+}
+
+function showCatchSuccess(caught){
+  document.getElementById('catch-text').textContent=`${caught.name} 포획 성공!`;
+  document.getElementById('catch-subtext').textContent=`기술: ${caught.skills.map(s=>s.name).join(', ')}`;
+  const ov=document.getElementById('catch-overlay');
+  ov.classList.add('open');
+  setTimeout(()=>ov.classList.remove('open'),2800);
+}
+
+// ═══════════════════════════════════════════════════
+//  BATTLE - 적 공격 / HP / 종료
+// ═══════════════════════════════════════════════════
+function enemyAttack(){
+  const bs=battleState;if(!bs||bs.over)return;
+  const dmg=Math.floor(bs.enemyAtk*(0.7+Math.random()*.5));
+  bs.myHp=Math.max(0,bs.myHp-dmg);
+  updateBHp();sfx('hit');setBlog(`야생 ${bs.enemy.name}의 반격! ${dmg} 데미지!`);
+  shake('b-my-img');
+  if(bs.myHp<=0){bs.over=true;setTimeout(()=>{setBlog(`${bs.myName}이(가) 쓰러졌다... 😢`);endBattle('lose')},600)}
+}
+
+function lockBtns(v){
+  ['b-atk','b-skill-btn','b-catch','b-run'].forEach(id=>document.getElementById(id).disabled=v);
+}
+
+function updateBHp(){
+  const bs=battleState;
+  const mp=bs.myHp/bs.myMaxHp*100,ep=bs.enemyHp/bs.enemyMaxHp*100;
+  const mEl=document.getElementById('b-my-hp'),eEl=document.getElementById('b-enemy-hp');
+  mEl.style.width=mp+'%';eEl.style.width=ep+'%';
+  if(mp<25)mEl.classList.add('low');if(ep<25)eEl.classList.add('low');
+}
+
+function endBattle(result){
+  closeSkillPanel();
+  lockBtns(true);
+  document.getElementById('b-actions').style.display='none';
+  document.getElementById('b-close').style.display='block';
+  if(result==='win'){
+    G.wins++;G.streak++;
+    const exp=Math.floor(battleState.enemy.atk*3+20+(G.streak>=3?20:0));
+    const coins=Math.floor(battleState.enemy.atk+10+(G.streak>=3?15:0));
+    G.coins+=coins;G.totalCoins+=coins;
+    G.happy=Math.min(100,G.happy+10);G.energy=Math.max(0,G.energy-20);G.bond=Math.min(100,G.bond+5);
+    gainExp(exp);sfx('levelup');
+    const sm=G.streak>=3?` (${G.streak}연승!)`:'';
+    addLog(`⚔️ 승리! EXP+${exp}, 코인+${coins}${sm}`);showToast(`🏆 승리! EXP+${exp}`);
+    floatNum(`+${coins}💰`,'#FFD700');
+  }else if(result==='lose'){
+    G.losses++;G.streak=0;
+    G.energy=Math.max(0,G.energy-30);G.happy=Math.max(0,G.happy-15);
+    addLog('💔 졌어... 더 훈련하자!');showToast('💔 패배!');
+  }else if(result==='catch'){
+    G.streak=0;
+  }else{
+    G.streak=0;G.energy=Math.max(0,G.energy-8);addLog('🏃 도망쳤어!');
+  }
+  checkBadges();updateUI();
+}
+
+function closeBattle(){document.getElementById('battle-modal').classList.remove('open');battleState=null}
+function setBlog(t){document.getElementById('b-log').textContent=t}
+function shake(id){const el=document.getElementById(id);el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake')}
+
+// ═══════════════════════════════════════════════════
+//  PARTY PANEL
+// ═══════════════════════════════════════════════════
+function renderParty(){
+  const panel=document.getElementById('party-panel');
+  const grid=document.getElementById('party-grid');
+  document.getElementById('ball-display').textContent=`⚾ 몬스터볼 ${G.balls}개`;
+
+  if(G.party.length===0&&G.balls===0){panel.style.display='none';return}
+  panel.style.display='block';
+  grid.innerHTML='';
+  G.party.forEach(p=>{
+    const card=document.createElement('div');card.className='party-card';
+    const skillNames=p.skills.map(s=>s.name).join(' / ');
+    card.innerHTML=`
+      <img src="${gifUrl(p.id)}" onerror="this.src='${pngUrl(p.id)}'">
+      <div class="pcname">${p.name}</div>
+      <div class="pcskills">${skillNames}</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+//  SHOP
+// ═══════════════════════════════════════════════════
+function openShop(){renderShop();document.getElementById('shop-modal').classList.add('open')}
+function closeShop(){document.getElementById('shop-modal').classList.remove('open')}
+function renderShop(){
+  const c=document.getElementById('shop-items');c.innerHTML='';
+  SHOP_ITEMS.forEach(item=>{
+    const d=document.createElement('div');
+    d.className='sitem'+(G.coins<item.cost?' cant':'');
+    d.innerHTML=`<span class="sico2">${item.ico}</span><div class="sinfo"><div class="sn">${item.name}</div><div class="sd">${item.desc}</div></div><span class="sp">💰${item.cost}</span>`;
+    if(G.coins>=item.cost)d.onclick=()=>buyItem(item);
+    c.appendChild(d);
+  });
+}
+function buyItem(item){
+  if(G.coins<item.cost){showToast('코인 부족!');return}
+  G.coins-=item.cost;item.fn(G);sfx('coin');
+  addLog(`🛒 ${item.name}!`);showToast(`${item.ico} ${item.name}!`);
+  renderShop();renderParty();updateUI();checkBadges();
+}
+
+// ═══════════════════════════════════════════════════
+//  RANDOM EVENT
+// ═══════════════════════════════════════════════════
+function triggerEvent(){
+  if(!G)return;
+  const ev=EVENTS[Math.floor(Math.random()*EVENTS.length)];
+  document.getElementById('e-icon').textContent=ev.ico;
+  document.getElementById('e-title').textContent=ev.title;
+  document.getElementById('e-desc').textContent=ev.desc;
+  document.getElementById('e-confirm').onclick=()=>{
+    const r=ev.fn(G);addLog(`🎲 ${ev.title} → ${r}`);showToast(`${ev.ico} ${r}`);sfx('coin');
+    checkBadges();updateUI();renderParty();
+    document.getElementById('event-modal').classList.remove('open');
+  };
+  document.getElementById('event-modal').classList.add('open');
+}
+
+// ═══════════════════════════════════════════════════
+//  BADGES
+// ═══════════════════════════════════════════════════
+function checkBadges(){
+  BADGES_DEF.forEach(b=>{
+    if(!earnedBadges.has(b.id)&&b.cond(G)){
+      earnedBadges.add(b.id);addLog(`🏅 배지! ${b.ico} ${b.label}`);showToast(`${b.ico} ${b.label} 배지!`);
+    }
+  });
+  const row=document.getElementById('badges-row');row.innerHTML='';
+  BADGES_DEF.forEach(b=>{
+    const el=document.createElement('span');
+    el.className='bchip'+(earnedBadges.has(b.id)?' on':'');
+    el.textContent=b.ico+' '+b.label;row.appendChild(el);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+//  FLOAT / UI
+// ═══════════════════════════════════════════════════
+function floatNum(text,color){
+  const el=document.createElement('div');el.className='floatnum';el.style.color=color;el.textContent=text;
+  const r=document.getElementById('poke-sprite').getBoundingClientRect();
+  el.style.left=(r.left+r.width/2-25)+'px';el.style.top=(r.top+r.height/3)+'px';
+  document.body.appendChild(el);setTimeout(()=>el.remove(),1300);
+}
+
+function updateUI(){
+  if(!G)return;
+  const pd=POKEDEX[G.pokeKey],st=pd.stages[G.stage];
+  const img=document.getElementById('poke-sprite');
+  const newSrc=gifUrl(st.id);
+  if(!img.src.endsWith(`${st.id}.gif`)&&!img.src.endsWith(`${st.id}.png`))setImg(img,st.id);
+  img.className='';
+  if(G.hunger<20)img.className='hungry';else if(G.energy<20)img.className='tired';
+  document.getElementById('poke-name-display').textContent=st.name;
+  document.getElementById('lv-num').textContent=G.level;
+  document.getElementById('coin-val').textContent=`💰 ${G.coins}`;
+  const ep=Math.floor(G.exp/G.expNeeded*100);
+  document.getElementById('exp-bar').style.width=ep+'%';
+  document.getElementById('exp-val').textContent=`${G.exp}/${G.expNeeded}`;
+  setStat('hunger',G.hunger);setStat('happy',G.happy);setStat('energy',G.energy);setStat('bond',G.bond);
+  document.getElementById('mood-text').textContent=getMood();
+  const sl=document.getElementById('streak-line');
+  if(G.streak>=2){sl.textContent=`🔥 ${G.streak}연승 중!`;sl.style.display='block'}
+  else sl.style.display='none';
+  renderParty();
+}
+
+function setStat(k,v){
+  const n=Math.round(v),f=document.getElementById(`fill-${k}`);
+  f.style.width=n+'%';document.getElementById(`val-${k}`).textContent=n;
+  f.classList.toggle('warn',n<20);
+}
+
+function getMood(){
+  const n=POKEDEX[G.pokeKey].stages[G.stage].name;
+  if(G.hunger<15)return`${n}: 배고파... 밥 줘 🥺`;
+  if(G.energy<15)return`${n}: 피곤해... 재워줘 😴`;
+  if(G.happy>=80&&G.bond>=60)return`${n}: 너무 행복해! 🥰`;
+  if(G.happy<30)return`${n}: 심심해... 같이 놀자 😞`;
+  if(G.bond>=70)return`${n}: 언제나 너와 함께! 💕`;
+  const ms=[`${n}: 오늘 뭐 할까?`,`${n}: 잘 부탁해! 😊`,`${n}: 훈련 시켜줘! 💪`];
+  return ms[Math.floor(Date.now()/3000)%ms.length];
+}
+
+// ═══════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════
+function setCd(ms){G.cd=true;setTimeout(()=>{if(G)G.cd=false},ms)}
+
+function addLog(t){
+  const box=document.getElementById('log-box');
+  const p=document.createElement('p');p.textContent=t;box.appendChild(p);
+  while(box.children.length>8)box.removeChild(box.firstChild);
+  box.scrollTop=box.scrollHeight;
+}
+
+let toastT=null;
+function showToast(msg){
+  const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');
+  clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),2200);
+}
+</script>
+</body>
+</html>
